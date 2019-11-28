@@ -423,6 +423,7 @@ class Api
         if (!self::check_parameter($input, array('type'), 'get_indexes')) {
             return false;
         }
+        $user = User::get_from_username(Session::username($input['auth']));
         $type = (string) $input['type'];
         // confirm the correct data
         if (!in_array($type, array('song', 'album', 'artist', 'playlist'))) {
@@ -444,7 +445,8 @@ class Api
         XML_Data::set_limit($input['limit']);
 
         if ($type == 'playlist') {
-            $objects = array_merge(self::$browse->get_objects(), Playlist::get_smartlists());
+            self::$browse->set_filter('playlist_type', $user->id);
+            $objects = array_merge(self::$browse->get_objects(), Playlist::get_smartlists(true, $user->id));
         } else {
             $objects = self::$browse->get_objects();
         }
@@ -915,15 +917,16 @@ class Api
      */
     public static function playlists($input)
     {
+        $user = User::get_from_username(Session::username($input['auth']));
         self::$browse->reset_filters();
         self::$browse->set_type('playlist');
         self::$browse->set_sort('name', 'ASC');
 
         $method = $input['exact'] ? 'exact_match' : 'alpha_match';
         self::set_filter($method, $input['filter']);
-        self::$browse->set_filter('playlist_type', '1');
+        self::$browse->set_filter('playlist_type', $user->id);
 
-        $playlist_ids = array_merge(self::$browse->get_objects(), Playlist::get_smartlists());
+        $playlist_ids = array_merge(self::$browse->get_objects(), Playlist::get_smartlists(true, $user->id));
         XML_Data::set_offset($input['offset']);
         XML_Data::set_limit($input['limit']);
 
